@@ -1,0 +1,138 @@
+// Copyright Tudor Cristian-Andrei 311CAa 2022 - 2023
+
+Programarea Calculatoarelor si limabje de programare - Tema 3
+
+Editor de imagini
+
+	Programul image_editor prelucreaza poze, respectiv fisiere de tip ppm
+si pgm. Interactiunea cu programul se realizeaza prin comenzi in terminal,
+astfel am gandit proiectul ca un limbaj de prelucrare a pozelor.
+	In main, cu ajutorul functiei do_query, am un fel de meniu. Pentru fiecare
+sir de caractere introdus de la tastatura, functia returneaza un int,
+functionand ca un cod pentru fiecare comanda. Numerele sunt alese aleatoriu,
+ar fi fost destul de greu sa stabilesc o ordine logica, si de aceea am lasat
+functia cat mai aproape de main (unele coduri tot au logica, ex 0 pentru
+EXIT, 10 pentru SAVE, -1 pentru comanda invalida).
+Am mai procedat in acelasi stil si la alte comenzi, dar voi detalia cand ajung
+acolo.
+	La rularea programului se citeste un sir de caractere, se genereaza "codul"
+lui, si se intra in while-ul principal. Cat timp codul de iesire al ultimei
+comenzi date este diferit de codul lui EXIT se ramane in bucla (dar mai vine si
+restrictia cu imaginea incarcata in prealabil, pentru care am considerat un 
+contor care tine minte cate poze s-au incarcat cu succes). Astfel, rularea
+programului depinde de codul de iesire al ultimei comenzi si de contor.
+	Comanda "LOAD": Daca sirul introdus este "LOAD", se asteapta apasarea
+caracterului spatiu ( ), iar apoi se citeste un alt sir reprezentand numele
+fisierului. Acesta este alocat dinamic, si poate contine si spatii (cand am
+facut tema m-am gandit ca o sa fie si teste in care numele este foarte mare,
+probabil nu as mai face la fel acum, tbh). Trebuie sa recunosc ca in cazul
+functiei read_string am facut o greseala de care mi-am dat seama prea tarziu,
+faptul ca nu am verificat daca s-a reusit sau nu alocarea. Desi este vorba de
+putini octeti si este putin probabil sa esueze, ar fi trebuit totusi sa tratez
+si acest caz. Revenind la incarcarea unei imagini in memorie, mai intai trebuie
+sa detaliez conceptul meu de imagine. Am creat o structura, img, care retine
+toate datele despre imagine : formatul, latimea, inaltimea, valoarea maxima, si
+matricea, poza propriu-zisa. Pentru matrice apar doua elemente in structura. Un
+dublu pointer de tip int, gray si un dublu pointer la o structura de tip RGB,
+care contine 3 int-uri, adica valorile pentru fiecare canal de culoare. Cand
+imaginea este color, valorile se retin in matricea pixel, de tipul RGB, iar
+matricea gray ramane nealocata. Cand imaginea este gri, se intampla opusul,
+matricea gray este alocata si matricea de tip RGB ramane nealocata. Un alt
+aspect important in aceasta structura este formatul. In functie de acesta,
+decid daca la un moment dat, in memorie este incarcata o imagine sau nu. Daca
+formatul este 0, atunci stiu ca nu este nicio imagine incarcata in memorie in
+acel moment. Astfel, dupa ce citesc numele fisierului, verific daca am poza
+incarcata in memorie, o eliberez, si dupa urmeaza incarcarea propriu-zisa.
+Pentru incarcare, am 2 functii, una pentru incarcarea unei poze in format
+ascii, iar cealalta pentru incarcare unei poze binare. Nu voi insista prea
+mult pe modul cum se face incarcarea, deoarece am explicat in comentariile
+din cod. In principiu, intai se deschide fisierul, se citeste formatul si se
+inchide. Fac acest lucru pentru a stii cum sa interpretez informatiile. Cred ca
+ar fi mers si daca as fi deschis in format text fisierul, ca sa citesc, dar am
+considerat ca e mai safe sa fie deschis in forma binara. Mai departe, redeschid
+fisierul asa cum am nevoie, citesc informatille din header, dupa care stochez
+valorile in matricea corespunzatoare. Pentru asta am avut grija tot timpul sa
+ma ating doar de matricea care exista. La final functia intoarce o structura de
+tipul img. Despre programarea defensiva voi vorbi in partea de jos. Ultimii
+pasi in partea de load este sa initializez selectia cu toata imaginea, si sa
+adun 1 la numarul de poze ce au fost incarcate, daca este cazul.
+	Comanda "SAVE": Asemanator comenzii load, citesc string-ul alocat dinamic,
+si il prelucrez astfel incat sa ramana ce trebuie (adica doar numele fisierului
+in cazul in care este prezent parametrul ascii, sau scot spatiile puse din 
+greseala la final). Precizarile cele mai importante sunt ca m-am folosit de
+functia sprintf si un string auxiliar pentru a tranforma numere in string-uri,
+pentru a fi scrise in header in format ascii.
+	Comanda "SELECT": citesc parametrii lui select, initial ca un sir de
+caractere. Pentru a ajunge la selectarea propriu-zisa, string-ul trece prin mai
+multe filtre. SELECT ALL este un caz particular al acestei comenzi. Se verifica
+daca exista poza incarcata in memorie. Pentru selectie am creat o structura,
+care retine coordonatele de inceput si de final pentru zona selectata. Astfel,
+daca string-ul este ALL, selectia retine colturile imaginii. Mai departe, daca
+se trece si de acest filtru, se incearca impartirea string-ului in cuvinte, cu
+strtok. Daca se gaseste vreun caracter al alfabetului, daca sunt prea putine
+sau prea multe coordonate, atunci se afiseaza mesajul de eroare, si nu se face
+nicio modificare asupra selectiei. Daca se trece si de acest filtru, se
+ordoneaza coordonatele si se retin valorile in selectie.
+	Comanda "CROP": se aloca o matrice auxilara, de ce tip este nevoie
+(determinat tot prin valoarea lui format), dupa care se copiaza in matricea
+auxiliara, formatul, valoarea maxima, se seteaza latimea si inaltimea, si se
+copiaza pixelii continuti in selectie. In functia apelata in main, do_crop, se
+face verificarea daca exista de fapt o imagine in memorie. Daca trece de acest
+unic filtru, se genereaza imaginea taiata, se elibereaza vechea imagine, si, cu
+ajutorul pointerilor, imaginea din main, devine imaginea auxiliara, cea taiata.
+Ultimul pas este sa se reinitializez selectia, deoarece dimensiunile s-au
+schimbat.
+	Comanda "APPLY": pentru aceasta comanda, am abuzat de structuri, si am
+declarat o structura care retine o matrice de tipul double (desi mergea si
+int) si un numar la care ar trebui impartit fiecare element al matricei. Am
+ales aceasta abordare, deoarece eroarea data de calculul cu virgula mobila ar
+fi mai mica (cel putin din punct de vedere matematic, dar s-ar putea sa gresesc).
+Se aloca o matrice auxiliara, in care o sa pastrez noii pixeli generati, dupa
+care vor fi copiati pe pozitia corespunzatoare in imagine. Ca mod de
+implementare, parcurg selectia, si "suprapun" peste fiecare pixel, matricea din
+structura ker, kernelul. Se inmulteste fiecare element din kernel, din "filtru",
+cum imi place sa-l consider, cu cel de "sub", peste care este asezat filtrul,
+iar apoi fac suma elementelor rezultate. La final impart la valoarea
+corespunzatoare (in cazurile de fata 1, 9, sau 16). Dupa parcurgerea selectiei,
+se copiaza rezultatul in poza, si nu se mai poate reveni la imaginea initiala.
+	Comanda "HISTOGRAM": pentru aceasta comanda, calculez frecventa culorilor
+pe intervale (am facut diferite teste pe o foaie pana am gasit o formula prin
+care sa includ usor valorile in intervale). Dupa aceasta operatie, intr-un alt
+vector, salvez numarul de stelute ce trebuie afisate pentru fiecare interval,
+numar rezultat aplicand formula matematica. Partea de afisare este usoara,
+cel mai bine se vede din cod, nu prea as avea ce sa detaliez aici.
+	Comanda "EQUALIZE": se bazeaza pe o functie folosita la HISTOGRAM, cea care
+calculeaza frecventa pe intervale. Pentru a calcula frecventa fiecarei valori
+se apeleaza ca si cum ar fi 256 de binuri. Dupa acest pas, urmeaza calcularea
+sumei de la 0 la a. Parcurg toata matricea si calculez pentru fiecare pixel
+corespondentul. O varianta mai eficienta, la care m-am gandit prea tarziu, ar
+fi fost sa calculez din prima, pentru fiecare element al vectorului de
+frecventa valoarea cu care se inlocuieste. Astfel as fi facut un numar limitat
+de calcule, 256, but it works anyway. In cazul egalizarii, nu se mai creaza o
+copie a pozei ca la apply, ci se inlocuieste direct.
+	Comanda "ROTATE": pentru aceasta functie am considerat 2 cazuri separate:
+atunci cand trebuie rotita toata imaginea, sau cand trebuie rotita doar o
+selectie. Am facut acest lucru deoarece, pentru rotirea intregii imagini se
+creaza o copie a pozei, si crearea copiei, atrage dupa sine o sansa de
+nereusita din cauza alocarii de memorie. In cazul unei selectii, nu se aloca
+nimic in plus, se realizeaza direct pe matrice. De mentionat este ca folosesc
+aceeasi functie, care roteste cu -90 de grade, pentru toate rotirile. Ea este
+apelata de 0, 1, 2 sau 3 ori consecutiv. Principiul de functionare este
+urmatorul : se face transpusa matricei, in urma careia iese rotirea dar cu un
+efect de oglinda. Pentru a elimina efectul de oglinda, interschimb liniile cu
+cele de la capatul opus (adica prima linie cu ultima, a doua cu penultima si 
+tot asa).
+	Comanda "EXIT": aceasta comanda este foarte simpla. Daca se ajunge in
+case 0 din switch, atunci clar nu a fost niciodata o imagine incarcata in
+memorie, iar in caz contrar, se va iesi din while, si se testeaza daca la acel
+moment este ceva in memorie, si se scrie mesajul corespunzator, dupa care se
+elibereaza memoria alocata, daca este cazul.
+	Pe partea de programare defensiva, folosesc 2 functii care aloca ori o
+matrice de tip gray ori de tip RGB. Principalele probleme de alocare provin
+de aici, atunci cand se face copia unei imagini, sau cand se incarca o imagine.
+In caz ca nu se reuseste alocarea, se elibereaza tot ce era alocat si se
+returneaza NULL. NULL se transmite mai departe. Spre exemplu in functia de LOAD,
+daca se returneaza NULL, se scrie mesajul de eroare, si valoarea lui format
+devine 0, ca o conventie. Pentru restul de cazuri, se scrie un mesaj de eroare,
+si se "abandoneaza misiunea", dar nu se iese din program. Se poate incerca din
+nou operatia, sau altceva (sper ca n-am omis sa scriu vreun mesaj de eroare).
